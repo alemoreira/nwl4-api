@@ -1,0 +1,177 @@
+Dia 1
+
+1. Criar o arquivo packge.json
+$ yarn init -y
+
+2. Instalar dependências
+
+Express - microframework para servidor
+$ yarn add express
+
+2.1 Adicionar as bibliotecas de tipagem do express.
+$ yarn add @types/express -D (-D baixar como dependência apenas de desenvolvimento)
+
+3. Tradutor/transpilador TS para Node.
+3.1 Instalar o typescript. Isso para que possamos pedir ao typescript para ele traduzir o código para algo que o Node entenda.
+$ yarn add typescript -D
+
+3.2 Inicializar o typesscript na aplicação
+$ yarn tsc --init
+
+vai criar um arquivo: tsconfig.json
+
+4. Instalar o tradutor (typescript para node), que em tempo de execução converte o código.
+$ yarn add ts-node-dev -D
+
+4.1 Criar script no package.json para rodar a tradução.
+...
+"scripts" : {
+  "dev": "ts-node-dev src/server.ts"
+},
+...
+
+4.1.1 adicione opções ao ts-node-dev 
+"dev": "ts-node-dev --transpile-only --ignore-watch node_modules src/server.ts"
+
+Dia 2
+
+1. Como inserir Banco de Dados em uma Aplicação Node.
+
+1.1 - Usar um Driver Nativo do Banco para Node.
+ex.: node-postgres.com
+
+1.2 - Query Builders
+ex.: knexjs.org
+
+1.3 ORM
+ex.: typeorm.io
+
+2. Instalar o TypeORM
+
+$ yarn add typeorm reflect-metadata
+
+2.1 - Usando o sqlite Driver
+
+$ yarn add sqlite3
+
+2.2 - Criar o arquivo de configuração do typeorm
+
+touch api/ormconfig.json
+{
+  "type": "sqlite",
+  "database": "./src/database/database.sqlite"
+}
+
+2.3 - Criar o componente Database 
+src/database/index.ts 
+
+import { createConnection } from 'typeorm';
+
+createConnection();
+
+2.4 Ajustar o servidor.
+src/server.ts 
+
+na primeira linha do arquivo, sempre. É importante!
+import 'reflect-metadata';
+...
+import './database';
+...
+
+Como o arquivo segue o padrão de nomenclatura pasta/index.ts, o nome do componente é o nome da pasta e não se faz necessário declarar o nome do arquivo, apenas o nome da pasta do componente na importação.
+
+3. Roda o servidor 
+$ yarn dev 
+
+veja que o arquivo sqlite do banco: src/database/database.sqlite, é criado e valida criar a conexão pelo beekeeper.
+
+4. Criar a migration
+
+Configurar um script para rodar as migration, usando a CLI do typeorm.
+
+...
+  "scripts": {
+    "dev": "ts-node-dev --transpile-only --ignore-watch node_modules src/server.ts",
+    "typeorm": "ts-node-dev node_modules/typeorm/cli.js"
+  },
+...
+
+$ yarm typeorm
+
+ 4.1 - Criando migrations
+
+4.1.1 - configurar o local onde as migrations serão criados. e como identificar os arquivos migrations para que o comando possa encontrar e excutar.
+
+em ormconfig.json,
+...
+"migrations": ["./src/database/migrations/**.ts"],
+"cli": {
+  "migrationsDir": "./src/database/migrations"
+}
+...
+
+$ yarn typeorm migration:create -n CreateUsers
+
+import {MigrationInterface, QueryRunner, Table} from "typeorm";
+
+export class CreateUsers1615046103148 implements MigrationInterface {
+
+    public async up(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.createTable(
+            new Table({
+                name: "users",
+                columns: [
+                    {
+                        name: "id",
+                        type: "uuid",
+                        isPrimary: true
+                    },
+                    {
+                        name: "name",
+                        type: "varchar"
+                    },
+                    {
+                        name: "email",
+                        type: "varchar"
+                    },
+                    {
+                        name: "created_at",
+                        type: "timestamp",
+                        default: "now()"
+                    },
+                ]
+            })
+        )
+    }
+
+    public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.dropTable("users");
+    }
+
+}
+
+- rodar a migration 
+
+$ yarn typeorm migration:QueryRunner
+
+- Caso seja necessário dar rollback, 
+
+$ yarn typeorm migration:revert
+
+
+5. Controllers
+
+5.1 Criar a classe Controller
+
+5.1.1 é necessário importar o Request e Response.
+
+6. Entidades
+
+6.1 Criando as entidades
+
+É necessário habilitar os decorators do typeorm em tsconfi.json para que as anotações funcionem.
+
+Adicionar a biblioteca uuid e seu tipo para poder iniciarliar os valores das chaves primarias das entidades.
+
+$ yarn add uuid 
+$ uar add @types/uuid -D
